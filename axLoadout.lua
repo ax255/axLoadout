@@ -176,6 +176,10 @@ local function RemoveFromLoadout(weapon)
 
 end
 
+local function playSound( name )
+    LocalPlayer():EmitSound( name )
+end
+
 local col_frame = Color( 40, 40, 40 )
 local col_frame_bar = Color( 60, 60, 60 )
 
@@ -250,6 +254,7 @@ function lpanel.confirmPrompt(parent, reason, func)
         lpanel.buildSideBar(parent)
         lpanel.buildButtons(parent)
         frame:Remove()
+        playSound("Buttons.snd42")
     end
 
     local cancelButton = vgui.Create("DButton", frame)
@@ -411,6 +416,7 @@ function lpanel.textPrompt(parent)
         lpanel.buildSideBar(parent)
         lpanel.buildButtons(parent)
         frame:Remove()
+        playSound("garrysmod/ui_click.wav")
     end
 
     local confirmButton = vgui.Create("DButton", frame)
@@ -423,6 +429,7 @@ function lpanel.textPrompt(parent)
         lpanel.buildSideBar(parent)
         lpanel.buildButtons(parent)
         frame:Remove()
+        playSound("garrysmod/ui_click.wav")
     end
 
     local cancelButton = vgui.Create("DButton", frame)
@@ -604,6 +611,7 @@ function lpanel.buildSideBar(parent)
             lpanel.buildButtons(parent)
             lpanel.buildSideBar(parent)
         end
+        playSound("Buttons.snd14")
     end
 
     local checkboxEnable = parent:Add( "DCheckBoxLabel" )
@@ -639,6 +647,8 @@ function lpanel.buildSideBar(parent)
 
     saveButton.DoClick = function(self)
         saveProfile()
+        playSound("garrysmod/ui_click.wav")
+        
     end
 
 end
