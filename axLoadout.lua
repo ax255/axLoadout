@@ -9,6 +9,7 @@ local autowield = nil
 local profileName = ""
 
 local ax_loadout_enable = CreateClientConVar( "ax_loadout_enable", 1, true, false, "", 0, 1 )
+local ax_loadout_autowield = CreateClientConVar( "ax_loadout_autowield", 1, true, false, "", 0, 1 )
 
 local function saveConfig()
     if file.Exists("axLoadout/profiles.json", "DATA") then
@@ -147,7 +148,8 @@ local function AddToLoadout(weapon, index)
     }
 
     if index then
-        table.insert(axLoadout, index, tbl)
+        --table.insert(axLoadout, index, tbl)
+        axLoadout[index] = tbl
     else
         table.insert(axLoadout, tbl)
     end
@@ -206,15 +208,22 @@ function lpanel.confirmPrompt(parent, reason, func)
     frame:SetPos(ScrW() / 2, ScrH() / 2)
     frame:MakePopup()
 
+    frame.Paint = function(self, w, h)
+        draw.RoundedBox( 5, 0, 0, w, h, col_but_hover )
+        draw.RoundedBox( 5, 0, 0, w, 25, col_frame_bar )
+    end
+
     local blurPanel = vgui.Create("DPanel", frame)
     blurPanel:SetSize(ScrW(), ScrH())
     blurPanel:SetPos(0, 0)
     blurPanel:MakePopup()
 
+    local startTime = CurTime()
     blurPanel.Paint = function(self, w, h)
         DrawBlur(self, 6)
         surface.SetDrawColor(0, 0, 0, 150)
         surface.DrawRect(0, 0, w, h)
+        -- Derma_DrawBackgroundBlur( self, startTime ) -- this blur is kinda meh
     end
 
     blurPanel.Think = function(self)
@@ -254,7 +263,7 @@ function lpanel.confirmPrompt(parent, reason, func)
 
     frame:SetPos( ( ScrW() / 2 ) - frame:GetWide() / 2, ( ScrH() / 2 ) - frame:GetTall() / 2 )
 
-    timer.Simple(10, function()
+    timer.Simple(60, function()
         if IsValid(blurPanel) then
             blurPanel:Remove()
         end
@@ -269,7 +278,7 @@ function lpanel.openSelector(parent, index)
     lastOpened = index
 
     if IsValid(selector) then
-        selector:SetPos(x, y)
+        selector:SetPos( math.Clamp( x, 0, ScrW() - 400 ), math.Clamp( y, 0, ScrH() - 400 ) )
         selector:SetVisible(true)
         selector:MakePopup()
         return
@@ -277,9 +286,8 @@ function lpanel.openSelector(parent, index)
 
     local frame = vgui.Create("DFrame", parent)
     frame:SetTitle("Weapon List")
-    frame:SetSize(400, 600)
-    frame:SetPos(x, y)
-    frame:SetDraggable(true)
+    frame:SetSize(400, 400)
+    frame:SetPos( math.Clamp( x, 0, ScrW() - 400 ), math.Clamp( y, 0, ScrH() - 400 ) )
     frame:MakePopup()
     frame:SetDeleteOnClose( false )
 
@@ -289,6 +297,11 @@ function lpanel.openSelector(parent, index)
         end
     end
 
+    frame.Paint = function(self, w, h)
+        draw.RoundedBox( 5, 0, 0, w, h, col_but_hover )
+        draw.RoundedBox( 5, 0, 0, w, 25, col_frame_bar )
+    end
+
     local searchBox = vgui.Create("DTextEntry", frame)
     searchBox:Dock(TOP)
     searchBox:SetPlaceholderText("Search weapons...")
@@ -296,8 +309,14 @@ function lpanel.openSelector(parent, index)
     local tree = vgui.Create("DTree", frame)
     tree:Dock(FILL)
 
+    tree.Paint = function(self, w, h)
+        draw.RoundedBox( 5, 0, 2, w, h, Color(230, 230, 230) )
+    end
+
     local function PopulateTree(filter)
         tree:Clear()
+
+        local isFilterEmpty = filter == nil or filter == ""
 
         for category, weaponList in pairs(categories) do
             local node = tree:AddNode(category, "icon16/gun.png")
@@ -328,6 +347,8 @@ function lpanel.openSelector(parent, index)
 
             if #node:GetChildNodes() == 0 then
                 node:Remove()
+            elseif isFilterEmpty then
+                node:SetExpanded(false)
             elseif shouldExpand then
                 node:SetExpanded(true)
             end
@@ -347,20 +368,82 @@ end
 
 function lpanel.textPrompt(parent)
 
-    local frame = vgui.Create( "DFrame", parent )
-    frame:SetSize( 300, 150 )
-    frame:Center()
+    local frame = vgui.Create("DFrame", parent)
+    frame:SetTitle("Enter profile name")
+    frame:SetSize(300, 150)
+    frame:SetPos(ScrW() / 2, ScrH() / 2)
     frame:MakePopup()
+
+    frame.Paint = function(self, w, h)
+        draw.RoundedBox( 5, 0, 0, w, h, col_but_hover )
+        draw.RoundedBox( 5, 0, 0, w, 25, col_frame_bar )
+    end
+
+    local blurPanel = vgui.Create("DPanel", frame)
+    blurPanel:SetSize(ScrW(), ScrH())
+    blurPanel:SetPos(0, 0)
+    blurPanel:MakePopup()
+
+    blurPanel.Paint = function(self, w, h)
+        DrawBlur(self, 6)
+        surface.SetDrawColor(0, 0, 0, 150)
+        surface.DrawRect(0, 0, w, h)
+    end
+
+    blurPanel.Think = function(self)
+        if IsValid(frame) then
+            frame:MoveToFront()
+        end
+    end
+
+    local label = vgui.Create("DLabel", frame)
+    label:SetText("Enter profile name")
+    label:SetFont("HudHintTextLarge")
+    label:SizeToContents()
+    label:SetPos(frame:GetWide() / 2 - label:GetWide() / 2, 50)
 
     local TextEntry = vgui.Create( "DTextEntry", frame )
     TextEntry:SetPos(10, 50)
     TextEntry:SetSize(280, 20)
+    TextEntry:SetPlaceholderText("Awesome loadout...")
     TextEntry.OnEnter = function( self )
         createProfile( self:GetValue() )
         lpanel.buildSideBar(parent)
         lpanel.buildButtons(parent)
         frame:Remove()
     end
+
+    local confirmButton = vgui.Create("DButton", frame)
+    confirmButton:SetText("Create")
+    confirmButton:SetSize(100, 30)
+    confirmButton:SetPos(170, 100)
+
+    confirmButton.DoClick = function( self )
+        createProfile( TextEntry:GetValue() )
+        lpanel.buildSideBar(parent)
+        lpanel.buildButtons(parent)
+        frame:Remove()
+    end
+
+    local cancelButton = vgui.Create("DButton", frame)
+    cancelButton:SetText("Cancel")
+    cancelButton:SetSize(100, 30)
+    cancelButton:SetPos(30, 100)
+
+    cancelButton.DoClick = function()
+        selectProfile(profileName)
+        lpanel.buildSideBar(parent)
+        lpanel.buildButtons(parent)
+        frame:Remove()
+    end
+
+    frame:SetPos( ( ScrW() / 2 ) - frame:GetWide() / 2, ( ScrH() / 2 ) - frame:GetTall() / 2 )
+
+    timer.Simple(60, function()
+        if IsValid(blurPanel) then
+            blurPanel:Remove()
+        end
+    end)
 
 end
 
@@ -371,6 +454,8 @@ function lpanel.buildButtons(parent)
     for _,item in pairs(items) do
         item:Remove()
     end
+
+    local adminOnlyMat = Material("icon16/shield.png")
 
     for i = 1, 18 do
 
@@ -383,6 +468,11 @@ function lpanel.buildButtons(parent)
 
         if axLoadout[i] then
 
+            local wepMat
+            if axLoadout[i].Icon then
+                wepMat = Material(axLoadout[i].Icon)
+            end
+
             buttons[i].Paint = function(self, w, h)
                 local bcolor = col_but
                 if self:IsHovered() then bcolor = col_red end
@@ -391,10 +481,16 @@ function lpanel.buildButtons(parent)
 
                 if axLoadout[i].Icon then
                     surface.SetDrawColor(col_white)
-                    surface.SetMaterial(Material(axLoadout[i].Icon))
+                    surface.SetMaterial(wepMat)
                     surface.DrawTexturedRect(2, 2, w-4, h-4)
                 else
                     draw.RoundedBox( 0, 2, 2, w-4, h-4, col_but )
+                end
+
+                if axLoadout[i].AdminOnly then
+                    surface.SetDrawColor(col_white)
+                    surface.SetMaterial(adminOnlyMat)
+                    surface.DrawTexturedRect(4, 4, 15, 15)
                 end
 
                 draw.RoundedBox( 0, 0, h-20, w, 20, Color( 50, 50, 50, 150 ) )
@@ -415,14 +511,16 @@ function lpanel.buildButtons(parent)
                 mdl:SetModel(axLoadout[i].WorldModel)
                 mdl:SetMouseInputEnabled(false)
 
-                local mn, mx = mdl.Entity:GetRenderBounds()
-                local size = 0
-                size = math.max( size, math.abs(mn.x) + math.abs(mx.x) )
-                size = math.max( size, math.abs(mn.y) + math.abs(mx.y) )
-                size = math.max( size, math.abs(mn.z) + math.abs(mx.z) )
+                if mdl.Entity then
+                    local mn, mx = mdl.Entity:GetRenderBounds()
+                    local size = 0
+                    size = math.max( size, math.abs(mn.x) + math.abs(mx.x) )
+                    size = math.max( size, math.abs(mn.y) + math.abs(mx.y) )
+                    size = math.max( size, math.abs(mn.z) + math.abs(mx.z) )
 
-                mdl:SetLookAt((mn + mx) * 0.5)
-                mdl:SetCamPos(Vector(size / 2, size / 2, size / 2))
+                    mdl:SetLookAt((mn + mx) * 0.5)
+                    mdl:SetCamPos(Vector(size / 2, size / 2, size / 2))
+                end
 
                 mdl.LayoutEntity = function() return end
 
@@ -437,10 +535,9 @@ function lpanel.buildButtons(parent)
                 surface.SetDrawColor(bcolor)
                 surface.DrawOutlinedRect(0, 0, w, h, 2)
 
-                surface.SetDrawColor( Color( 255, 255, 255, 150 ))
-                surface.DrawRect( w / 2, ( h / 2 ) / 2 , 3, h / 2 )
-                surface.DrawRect( ( w / 2 ) / 2, h / 2,  w / 2 , 3 )
-
+                --surface.SetDrawColor( Color( 255, 255, 255, 150 ))
+                surface.DrawRect( ( w / 2 ) - 1, h / 4, 3, h / 2)
+                surface.DrawRect(w / 4, ( h / 2 ) - 1, w / 2, 3)
             end
 
         end
@@ -516,6 +613,13 @@ function lpanel.buildSideBar(parent)
     checkboxEnable:SizeToContents()
     checkboxEnable:SetConVar("ax_loadout_enable")
 
+    local checkboxAutoWield = parent:Add( "DCheckBoxLabel" )
+    checkboxAutoWield:SetPos( 630, 75 )
+    checkboxAutoWield:SetValue( ax_loadout_autowield:GetInt() )
+    checkboxAutoWield:SetText("Auto equip weapon.")
+    checkboxAutoWield:SizeToContents()
+    checkboxAutoWield:SetConVar("ax_loadout_autowield")
+
     local deleteButton = vgui.Create( "DButton", parent )
     deleteButton:SetSize(150, 30)
     deleteButton:SetPos(630, 265)
@@ -523,7 +627,7 @@ function lpanel.buildSideBar(parent)
     deleteButton:SetText("Delete")
 
     deleteButton.DoClick = function(self)
-        lpanel.confirmPrompt(parent, "Are you sure you want to delete: " .. profileName, function() 
+        lpanel.confirmPrompt(parent, "Confirm deletation of '" .. profileName .. "'", function()
             deleteProfile(profileName)
         end)
     end
@@ -543,6 +647,7 @@ local function loadoutOpen()
 
     if IsValid(axLoadoutPanel) then
         axLoadoutPanel:SetVisible(true)
+        axLoadoutPanel:MakePopup()
         return
     end
 
@@ -591,8 +696,8 @@ local function giveLoadout()
         RunConsoleCommand("gm_giveswep", weapon.ClassName)
     end
 
-    timer.Simple(0.1, function()
-        if LocalPlayer():GetWeapon( autowield or "weapon_physgun" ) then
+    timer.Simple(0.2, function()
+        if LocalPlayer():GetWeapon( autowield or "weapon_physgun" ) and ax_loadout_autowield:GetInt() == 1 then
             local wep = LocalPlayer():GetWeapon( autowield or "weapon_physgun" )
             print(autowield or "weapon_physgun")
             if IsValid(wep) then
