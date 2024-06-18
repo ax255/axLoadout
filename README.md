@@ -5,7 +5,7 @@ A client side only script that allow user to automatically give themself weapon 
 ## Features
 
 - Auto give weapons on respawn
-- Auto equip weapon on respawn
+- Auto equip weapon on respawn (right click on a weapon in your loadout)
 - Mutiple loadout profiles
 
 ## Screenshots
