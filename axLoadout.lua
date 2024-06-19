@@ -700,20 +700,36 @@ end
 local function giveLoadout()
 
     print("Giving weapons...")
-    PrintTable(axLoadout)
+
     for _,weapon in pairs(axLoadout) do
-        print(weapon.ClassName)
+        print("Giving: " .. weapon.ClassName)
         RunConsoleCommand("gm_giveswep", weapon.ClassName)
     end
 
     timer.Simple(0.2, function()
-        if LocalPlayer():GetWeapon( autowield or "weapon_physgun" ) and ax_loadout_autowield:GetInt() == 1 then
-            local wep = LocalPlayer():GetWeapon( autowield or "weapon_physgun" )
-            print(autowield or "weapon_physgun")
-            if IsValid(wep) then
-                input.SelectWeapon( wep )
+
+        if ax_loadout_autowield:GetInt() == 1 then
+
+            if LocalPlayer():GetWeapon( autowield ) then
+                local wep = LocalPlayer():GetWeapon( autowield )
+                print("Auto equip: " .. autowield )
+                if IsValid(wep) then
+                    input.SelectWeapon( wep )
+                end
             end
+
+        else
+
+            if LocalPlayer():GetWeapon( "weapon_physgun" ) then
+                local wep = LocalPlayer():GetWeapon( "weapon_physgun" )
+                print("Auto equip: weapon_physgun")
+                if IsValid(wep) then
+                    input.SelectWeapon( wep )
+                end
+            end
+
         end
+
     end)
 
 end
