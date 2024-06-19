@@ -94,35 +94,16 @@ end
 
 loadProfiles()
 
-local hl2weps = {} -- manually adding hl2 weapons into the list
-local function ADD_WEAPON( name, class )
-    table.insert( hl2weps, {ClassName = class, PrintName = name, Category = "Half-Life 2", Author = "VALVe", Spawnable = true } )
-end
-ADD_WEAPON( "Gravity Gun", "weapon_physcannon" )
-ADD_WEAPON( "Stunstick", "weapon_stunstick" )
-ADD_WEAPON( "Frag Grenade", "weapon_frag" )
-ADD_WEAPON( "Crossbow", "weapon_crossbow" )
-ADD_WEAPON( "Bug Bait", "weapon_bugbait" )
-ADD_WEAPON( "RPG Launcher", "weapon_rpg" )
-ADD_WEAPON( "Crowbar", "weapon_crowbar" )
-ADD_WEAPON( "Shotgun", "weapon_shotgun" )
-ADD_WEAPON( "9mm Pistol", "weapon_pistol" )
-ADD_WEAPON( "S.L.A.M", "weapon_slam" )
-ADD_WEAPON( "SMG", "weapon_smg1" )
-ADD_WEAPON( "Pulse-Rifle", "weapon_ar2" )
-ADD_WEAPON( ".357 Magnum", "weapon_357" )
-
-local weapons = weapons.GetList()
+local weapons = list.Get("Weapon")
 local function GetWeaponsByCategory()
     local categories = {}
-    for _, weapon in ipairs(weapons) do
+    for _, weapon in pairs(weapons) do
         local category = weapon.Category or "Other"
         if not categories[category] then
             categories[category] = {}
         end
         table.insert(categories[category or "Other"], weapon)
     end
-    categories["Half-Life 2"] = hl2weps
     return categories
 end
 local categories = GetWeaponsByCategory()
@@ -144,7 +125,7 @@ local function AddToLoadout(weapon, index)
         Spawnable = weapon.Spawnable,
         AdminOnly = weapon.AdminOnly,
         WorldModel = weapon.WorldModel,
-        Icon = weapon.IconOverride or ( file.Exists("materials/entities/" .. weapon.ClassName .. ".png", "GAME") and "entities/" .. weapon.ClassName .. ".png" ) 
+        Icon = weapon.IconOverride or ( file.Exists("materials/entities/" .. weapon.ClassName .. ".png", "GAME") and "entities/" .. weapon.ClassName .. ".png" )
         or (file.Exists("materials/vgui/entities/" .. weapon.ClassName .. ".vmt", "GAME") and "vgui/entities/" .. weapon.ClassName ) or nil,
     }
 
@@ -331,7 +312,7 @@ function lpanel.openSelector(parent, index)
             for _, weapon in ipairs(weaponList) do
                 if not weapon.Spawnable then continue end
                 if not filter or string.find(string.lower(weapon.PrintName or weapon.ClassName), string.lower(filter)) then
-                    local icon = weapon.IconOverride or (  file.Exists("materials/entities/" .. weapon.ClassName .. ".png", "GAME") and "entities/" .. weapon.ClassName .. ".png" ) 
+                    local icon = weapon.IconOverride or (  file.Exists("materials/entities/" .. weapon.ClassName .. ".png", "GAME") and "entities/" .. weapon.ClassName .. ".png" )
                     or (file.Exists("materials/vgui/entities/" .. weapon.ClassName .. ".vmt", "GAME") and "vgui/entities/" .. weapon.ClassName ) or nil
                     local wepNode = node:AddNode(weapon.PrintName or weapon.ClassName, icon or "icon16/gun.png" )
 
@@ -681,11 +662,13 @@ local function loadoutOpen()
         draw.RoundedBox( 5, 0, 0, w, 25, col_frame_bar )
     end
 
+    --[[
     Frame.Think = function(self)
         if self:IsActive() and (input.IsMouseDown( MOUSE_LEFT ) and not ( self:IsHovered() or self:IsChildHovered() ) ) then
             Frame:Close()
         end
     end
+    ]]--
 
     local DScrollPanel = vgui.Create( "DScrollPanel", Frame )
     DScrollPanel:SetPos(10, 30)
