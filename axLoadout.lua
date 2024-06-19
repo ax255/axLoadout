@@ -708,26 +708,18 @@ local function giveLoadout()
 
     timer.Simple(0.2, function()
 
+        local wepClass = "weapon_physgun"
+
         if ax_loadout_autowield:GetInt() == 1 then
+            wepClass = autowield or "weapon_physgun"
+        end
 
-            if LocalPlayer():GetWeapon( autowield ) then
-                local wep = LocalPlayer():GetWeapon( autowield )
-                print("Auto equip: " .. autowield )
-                if IsValid(wep) then
-                    input.SelectWeapon( wep )
-                end
+        if LocalPlayer():GetWeapon( wepClass ) then
+            local wep = LocalPlayer():GetWeapon( wepClass )
+            print("Auto equip: " .. wepClass )
+            if IsValid(wep) then
+                input.SelectWeapon( wep )
             end
-
-        else
-
-            if LocalPlayer():GetWeapon( "weapon_physgun" ) then
-                local wep = LocalPlayer():GetWeapon( "weapon_physgun" )
-                print("Auto equip: weapon_physgun")
-                if IsValid(wep) then
-                    input.SelectWeapon( wep )
-                end
-            end
-
         end
 
     end)
