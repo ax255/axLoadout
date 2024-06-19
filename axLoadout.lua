@@ -144,7 +144,8 @@ local function AddToLoadout(weapon, index)
         Spawnable = weapon.Spawnable,
         AdminOnly = weapon.AdminOnly,
         WorldModel = weapon.WorldModel,
-        Icon = weapon.IconOverride or ( file.Exists("materials/entities/" .. weapon.ClassName .. ".png", "GAME") and "entities/" .. weapon.ClassName .. ".png" ) or nil,
+        Icon = weapon.IconOverride or ( file.Exists("materials/entities/" .. weapon.ClassName .. ".png", "GAME") and "entities/" .. weapon.ClassName .. ".png" ) 
+        or (file.Exists("materials/vgui/entities/" .. weapon.ClassName .. ".vmt", "GAME") and "vgui/entities/" .. weapon.ClassName ) or nil,
     }
 
     if index then
@@ -330,7 +331,8 @@ function lpanel.openSelector(parent, index)
             for _, weapon in ipairs(weaponList) do
                 if not weapon.Spawnable then continue end
                 if not filter or string.find(string.lower(weapon.PrintName or weapon.ClassName), string.lower(filter)) then
-                    local icon = weapon.IconOverride or (  file.Exists("materials/entities/" .. weapon.ClassName .. ".png", "GAME") and "entities/" .. weapon.ClassName .. ".png" ) or nil
+                    local icon = weapon.IconOverride or (  file.Exists("materials/entities/" .. weapon.ClassName .. ".png", "GAME") and "entities/" .. weapon.ClassName .. ".png" ) 
+                    or (file.Exists("materials/vgui/entities/" .. weapon.ClassName .. ".vmt", "GAME") and "vgui/entities/" .. weapon.ClassName ) or nil
                     local wepNode = node:AddNode(weapon.PrintName or weapon.ClassName, icon or "icon16/gun.png" )
 
                     local lastClick = 0
@@ -648,7 +650,6 @@ function lpanel.buildSideBar(parent)
     saveButton.DoClick = function(self)
         saveProfile()
         playSound("garrysmod/ui_click.wav")
-        
     end
 
 end
@@ -656,8 +657,12 @@ end
 local function loadoutOpen()
 
     if IsValid(axLoadoutPanel) then
-        axLoadoutPanel:SetVisible(true)
-        axLoadoutPanel:MakePopup()
+        if axLoadoutPanel:IsVisible() then
+            axLoadoutPanel:SetVisible(false)
+        else
+            axLoadoutPanel:SetVisible(true)
+            axLoadoutPanel:MakePopup()
+        end
         return
     end
 
@@ -674,6 +679,12 @@ local function loadoutOpen()
     Frame.Paint = function(self, w, h)
         draw.RoundedBox( 5, 0, 0, w, h, col_frame )
         draw.RoundedBox( 5, 0, 0, w, 25, col_frame_bar )
+    end
+
+    Frame.Think = function(self)
+        if self:IsActive() and (input.IsMouseDown( MOUSE_LEFT ) and not ( self:IsHovered() or self:IsChildHovered() ) ) then
+            Frame:Close()
+        end
     end
 
     local DScrollPanel = vgui.Create( "DScrollPanel", Frame )
@@ -727,7 +738,7 @@ local function giveLoadout()
 end
 
 gameevent.Listen( "player_spawn" )
-hook.Add( "player_spawn", "player_spawn_example", function( data )
+hook.Add( "player_spawn", "axLoadout_giveLoadout", function( data )
     if data.userid == LocalPlayer():UserID() and ax_loadout_enable:GetInt() == 1 then
         giveLoadout()
     end
